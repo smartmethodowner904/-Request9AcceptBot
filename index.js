@@ -237,9 +237,9 @@ bot.action("new_link", async (ctx) => {
     await ctx.editMessageReplyMarkup(buttons.reply_markup);
 
     await ctx.answerCbQuery(
-      "✅ New Link Created!",
-      { show_alert: true }
-    );
+  "✅ New Link Created!",
+  { show_alert: true }
+).catch(() => {});
 
   } catch (e) {
     console.log(e);
@@ -251,19 +251,27 @@ bot.action("new_link", async (ctx) => {
 
 bot.action("joined", async (ctx) => {
 
-  ctx.answerCbQuery();
+  try {
 
-  ctx.reply(
-    `🎉 Welcome ${ctx.from.first_name} !
+    await ctx.answerCbQuery().catch(() => {});
+
+    await ctx.reply(
+`🎉 Welcome ${ctx.from.first_name} !
 
 ✅ You are now verified user.
 💙 Enjoy our services & stay active.`
-  );
+    );
+
+  } catch (e) {
+    console.log(e);
+  }
 
 });
 
 /* ================= START BOT ================= */
 
 bot.launch();
+process.once("SIGINT", () => bot.stop("SIGINT"));
+process.once("SIGTERM", () => bot.stop("SIGTERM"));
 
 console.log("🤖 Bot Running Successfully...");
