@@ -12,10 +12,18 @@ const GROUPS = [
   "-1003723410396"
 ];
 
+/* ================= PRIVATE CHANNEL ================= */
+
+const PRIVATE_CHANNEL =
+  "-1002315458574";
+
 /* ================= CHANNELS ================= */
 
-const MAIN_CHANNEL = "-1002315458574";
-const GLOBAL_CHANNEL = "-1002510081290";
+const MAIN_CHANNEL =
+  "-1002315458574";
+
+const GLOBAL_CHANNEL =
+  "-1002510081290";
 
 /* ================= RANDOM MESSAGE ================= */
 
@@ -32,7 +40,7 @@ function getRandomMessage(name) {
 
 }
 
-/* ================= CREATE LINK ================= */
+/* ================= CREATE INVITE LINK ================= */
 
 async function createInviteLink(chatId) {
 
@@ -73,7 +81,12 @@ bot.on("chat_join_request", async (ctx) => {
 
     console.log("CHAT ID:", chatId);
 
-    if (!GROUPS.includes(chatId)) {
+    /* ❌ UNKNOWN CHAT */
+
+    if (
+      !GROUPS.includes(chatId) &&
+      chatId !== PRIVATE_CHANNEL
+    ) {
 
       console.log("GROUP NOT MATCHED");
 
@@ -81,7 +94,7 @@ bot.on("chat_join_request", async (ctx) => {
 
     }
 
-    /* ✅ APPROVE */
+    /* ✅ APPROVE REQUEST */
 
     await bot.telegram.approveChatJoinRequest(
       chatId,
@@ -90,20 +103,26 @@ bot.on("chat_join_request", async (ctx) => {
 
     console.log("REQUEST APPROVED");
 
-    /* ✅ USER */
+    /* ✅ CHANNEL হলে শুধু ACCEPT */
+
+    if (!GROUPS.includes(chatId)) {
+
+      console.log("CHANNEL REQUEST APPROVED");
+
+      return;
+
+    }
+
+    /* ================= GROUP WELCOME ================= */
 
     const name =
       ctx.from.first_name || "User";
-
-    /* ✅ LINKS */
 
     const mainLink =
       await createInviteLink(MAIN_CHANNEL);
 
     const globalLink =
       await createInviteLink(GLOBAL_CHANNEL);
-
-    /* ✅ BUTTONS */
 
     const buttons =
       Markup.inlineKeyboard([
@@ -224,13 +243,13 @@ bot.start(async (ctx) => {
 
   } catch (e) {
 
-    console.log(e);
+    console.log("START ERROR:", e);
 
   }
 
 });
 
-/* ================= GENERATE LINK ================= */
+/* ================= GENERATE NEW LINK ================= */
 
 bot.action("new_link", async (ctx) => {
 
@@ -274,13 +293,13 @@ bot.action("new_link", async (ctx) => {
 
   } catch (e) {
 
-    console.log(e);
+    console.log("NEW LINK ERROR:", e);
 
   }
 
 });
 
-/* ================= JOINED ================= */
+/* ================= JOINED BUTTON ================= */
 
 bot.action("joined", async (ctx) => {
 
@@ -298,7 +317,7 @@ bot.action("joined", async (ctx) => {
 
   } catch (e) {
 
-    console.log(e);
+    console.log("JOINED ERROR:", e);
 
   }
 
