@@ -4,36 +4,40 @@ import { welcomeMessages } from "./messages.js";
 
 const bot = new Telegraf(BOT_TOKEN);
 
-/* ================= CONFIG ================= */
+/* ================= GROUPS ================= */
 
-const ADMIN_ID = 8136997138;
-
-const MAIN_CHANNEL = "-1002315458574";
-const GLOBAL_CHANNEL = "-1002510081290";
-
-/* ✅ ALL GROUP IDS */
 const GROUPS = [
   "-1002346718545",
   "-1003527248014",
   "-1003723410396"
 ];
 
+/* ================= CHANNELS ================= */
+
+const MAIN_CHANNEL = "-1002315458574";
+const GLOBAL_CHANNEL = "-1002510081290";
+
 /* ================= RANDOM MESSAGE ================= */
 
 function getRandomMessage(name) {
   const msg =
-    welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
+    welcomeMessages[
+      Math.floor(Math.random() * welcomeMessages.length)
+    ];
 
   return msg.replace("{name}", name);
 }
 
-/* ================= CREATE INVITE LINK ================= */
+/* ================= CREATE LINK ================= */
 
 async function createInviteLink(chatId) {
-  const link = await bot.telegram.createChatInviteLink(chatId, {
-    member_limit: 1,
-    expire_date: Math.floor(Date.now() / 1000) + 3600
-  });
+
+  const link =
+    await bot.telegram.createChatInviteLink(chatId, {
+      member_limit: 1,
+      expire_date:
+        Math.floor(Date.now() / 1000) + 3600
+    });
 
   return link.invite_link;
 }
@@ -41,111 +45,93 @@ async function createInviteLink(chatId) {
 /* ================= AUTO APPROVE ================= */
 
 bot.on("chat_join_request", async (ctx) => {
+
   try {
+
     const chatId = ctx.chat.id.toString();
 
     if (!GROUPS.includes(chatId)) return;
+
+    /* ✅ APPROVE REQUEST */
 
     await ctx.approveChatJoinRequest();
 
-  } catch (e) {
-    console.log(e);
-  }
-});
+    /* ✅ USER NAME */
 
-/* ================= WELCOME SYSTEM ================= */
+    const name =
+      ctx.from.first_name || "User";
 
-async function sendWelcome(ctx) {
+    /* ✅ CREATE LINKS */
 
-  const chatId = ctx.chat.id;
-  const name = ctx.from.first_name;
+    const mainLink =
+      await createInviteLink(MAIN_CHANNEL);
 
-  const mainLink = await createInviteLink(MAIN_CHANNEL);
-  const globalLink = await createInviteLink(GLOBAL_CHANNEL);
+    const globalLink =
+      await createInviteLink(GLOBAL_CHANNEL);
 
-  const buttons = Markup.inlineKeyboard([
-    [
-      Markup.button.url("📢 Main TG Channel", mainLink)
-    ],
-    [
-      Markup.button.url("🌏 Global Method Channel", globalLink)
-    ],
-    [
-      Markup.button.callback("♻️ Generate New Link", "new_link")
-    ]
-  ]);
+    /* ✅ BUTTONS */
 
-  const message = await ctx.telegram.sendMessage(
-    chatId,
-    getRandomMessage(name),
-    buttons
-  );
+    const buttons = Markup.inlineKeyboard([
+      [
+        Markup.button.url(
+          "📢 Main TG Channel",
+          mainLink
+        )
+      ],
+      [
+        Markup.button.url(
+          "💠 Global Method Channel",
+          globalLink
+        )
+      ],
+      [
+        Markup.button.callback(
+          "♻️ Generate New Link",
+          "new_link"
+        )
+      ]
+    ]);
 
-  /* 🔄 CHANGE MESSAGE EVERY 4 SEC */
+    /* ✅ SEND WELCOME */
 
-  const interval = setInterval(async () => {
-
-    try {
-
-      const newMainLink = await createInviteLink(MAIN_CHANNEL);
-      const newGlobalLink = await createInviteLink(GLOBAL_CHANNEL);
-
-      const newButtons = Markup.inlineKeyboard([
-        [
-          Markup.button.url("📢 Main TG Channel", newMainLink)
-        ],
-        [
-          Markup.button.url("🌏 Global Method Channel", newGlobalLink)
-        ],
-        [
-          Markup.button.callback("♻️ Generate New Link", "new_link")
-        ]
-      ]);
-
-      await ctx.telegram.editMessageText(
-        chatId,
-        message.message_id,
-        null,
-        getRandomMessage(name),
-        newButtons
-      );
-
-    } catch (e) {
-      clearInterval(interval);
-    }
-
-  }, 4000);
-
-  /* 🗑 DELETE AFTER 5 MIN */
-
-  setTimeout(() => {
-
-    clearInterval(interval);
-
-    ctx.telegram.deleteMessage(
+    const msg = await ctx.telegram.sendMessage(
       chatId,
-      message.message_id
-    ).catch(() => {});
+      getRandomMessage(name),
+      buttons
+    );
 
-  }, 300000);
-}
+    /* 🔄 CHANGE MESSAGE EVERY 4 SEC */
 
-/* ================= MEMBER JOIN EVENT ================= */
+    const interval = setInterval(async () => {
 
-bot.on("chat_member", async (ctx) => {
+      try {
 
-  try {
+        await ctx.telegram.editMessageText(
+          chatId,
+          msg.message_id,
+          null,
+          getRandomMessage(name),
+          buttons
+        );
 
-    const chatId = ctx.chat.id.toString();
+      } catch (e) {
+        clearInterval(interval);
+      }
 
-    if (!GROUPS.includes(chatId)) return;
+    }, 4000);
 
-    const status =
-      ctx.chatMember.new_chat_member.status;
+    /* 🗑 DELETE AFTER 5 MIN */
 
-    if (status === "member") {
-      sendWelcome(ctx);
-    }
+    setTimeout(async () => {
+
+      clearInterval(interval);
+
+      await ctx.telegram.deleteMessage(
+        chatId,
+        msg.message_id
+      ).catch(() => {});
+
+    }, 300000);
 
   } catch (e) {
     console.log(e);
@@ -157,73 +143,72 @@ bot.on("chat_member", async (ctx) => {
 
 bot.start(async (ctx) => {
 
-  const name = ctx.from.first_name;
-
-  const mainLink = await createInviteLink(MAIN_CHANNEL);
-  const globalLink = await createInviteLink(GLOBAL_CHANNEL);
-
-  const buttons = Markup.inlineKeyboard([
-    [
-      Markup.button.url("📢 Main TG Channel", mainLink)
-    ],
-    [
-      Markup.button.url("🌏 Global Method Channel", globalLink)
-    ],
-    [
-      Markup.button.callback("👤 Joined", "joined")
-    ]
-  ]);
-
-  const msg = await ctx.reply(
-    `👋 Welcome ${name} To Auto Approve Bot System!`,
-    buttons
-  );
-
-  /* 🔄 AUTO CHANGE MESSAGE */
-
-  const interval = setInterval(async () => {
-
-    try {
-
-      await ctx.telegram.editMessageText(
-        ctx.chat.id,
-        msg.message_id,
-        null,
-        getRandomMessage(name),
-        buttons
-      );
-
-    } catch (e) {
-      clearInterval(interval);
-    }
-
-  }, 4000);
-
-});
-
-/* ================= GENERATE NEW LINK ================= */
-
-bot.action("new_link", async (ctx) => {
-
   try {
 
-    const newMainLink =
+    const name =
+      ctx.from.first_name || "User";
+
+    const mainLink =
       await createInviteLink(MAIN_CHANNEL);
 
-    const newGlobalLink =
+    const globalLink =
       await createInviteLink(GLOBAL_CHANNEL);
 
     const buttons = Markup.inlineKeyboard([
       [
         Markup.button.url(
           "📢 Main TG Channel",
-          newMainLink
+          mainLink
         )
       ],
       [
         Markup.button.url(
-          "🌏 Global Method Channel",
-          newGlobalLink
+          "💠 Global Method Channel",
+          globalLink
+        )
+      ],
+      [
+        Markup.button.callback(
+          "👤 Joined",
+          "joined"
+        )
+      ]
+    ]);
+
+    await ctx.reply(
+      `👋 Welcome ${name} To Auto Approve Bot System!`,
+      buttons
+    );
+
+  } catch (e) {
+    console.log(e);
+  }
+
+});
+
+/* ================= NEW LINK ================= */
+
+bot.action("new_link", async (ctx) => {
+
+  try {
+
+    const mainLink =
+      await createInviteLink(MAIN_CHANNEL);
+
+    const globalLink =
+      await createInviteLink(GLOBAL_CHANNEL);
+
+    const buttons = Markup.inlineKeyboard([
+      [
+        Markup.button.url(
+          "📢 Main TG Channel",
+          mainLink
+        )
+      ],
+      [
+        Markup.button.url(
+          "💠 Global Method Channel",
+          globalLink
         )
       ],
       [
@@ -234,12 +219,13 @@ bot.action("new_link", async (ctx) => {
       ]
     ]);
 
-    await ctx.editMessageReplyMarkup(buttons.reply_markup);
+    await ctx.editMessageReplyMarkup(
+      buttons.reply_markup
+    );
 
     await ctx.answerCbQuery(
-  "✅ New Link Created!",
-  { show_alert: true }
-).catch(() => {});
+      "✅ New Link Created!"
+    ).catch(() => {});
 
   } catch (e) {
     console.log(e);
@@ -247,19 +233,20 @@ bot.action("new_link", async (ctx) => {
 
 });
 
-/* ================= JOINED BUTTON ================= */
+/* ================= JOINED ================= */
 
 bot.action("joined", async (ctx) => {
 
   try {
 
-    await ctx.answerCbQuery().catch(() => {});
+    await ctx.answerCbQuery()
+      .catch(() => {});
 
     await ctx.reply(
 `🎉 Welcome ${ctx.from.first_name} !
 
-✅ You are now verified user.
-💙 Enjoy our services & stay active.`
+✅ You are verified user.
+💙 Enjoy our services.`
     );
 
   } catch (e) {
@@ -271,7 +258,15 @@ bot.action("joined", async (ctx) => {
 /* ================= START BOT ================= */
 
 bot.launch();
-process.once("SIGINT", () => bot.stop("SIGINT"));
-process.once("SIGTERM", () => bot.stop("SIGTERM"));
 
 console.log("🤖 Bot Running Successfully...");
+
+/* ================= SAFE STOP ================= */
+
+process.once("SIGINT", () =>
+  bot.stop("SIGINT")
+);
+
+process.once("SIGTERM", () =>
+  bot.stop("SIGTERM")
+);
