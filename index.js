@@ -134,7 +134,7 @@ bot.on("chat_join_request", async (ctx) => {
         ],
         [
           Markup.button.url(
-            "💠 Global Method Channel",
+            "🌏 Global Method Channel",
             globalLink
           )
         ],
@@ -157,26 +157,28 @@ bot.on("chat_join_request", async (ctx) => {
 
     /* 🔄 AUTO CHANGE */
 
-    const interval =
-      setInterval(async () => {
+    const interval = setInterval(async () => {
 
-        try {
+  try {
 
-          await ctx.telegram.editMessageText(
-            chatId,
-            msg.message_id,
-            null,
-            getRandomMessage(name),
-            buttons
-          );
+    await ctx.telegram.editMessageText(
+      chatId,
+      msg.message_id,
+      null,
+      getRandomMessage(name),
+      buttons
+    );
 
-        } catch {
+  } catch (e) {
 
-          clearInterval(interval);
+    console.log("EDIT ERROR (ignored)");
 
-        }
+    // ❌ interval stop করা যাবে না
+    // clearInterval(interval) REMOVE
 
-      }, 4000);
+  }
+
+}, 4000);
 
     /* 🗑 AUTO DELETE */
 
@@ -224,7 +226,7 @@ bot.start(async (ctx) => {
         ],
         [
           Markup.button.url(
-            "💠 Global Method Channel",
+            "🌏 Global Method Channel",
             globalLink
           )
         ],
@@ -271,7 +273,7 @@ bot.action("new_link", async (ctx) => {
         ],
         [
           Markup.button.url(
-            "💠 Global Method Channel",
+            "🌏 Global Method Channel",
             globalLink
           )
         ],
