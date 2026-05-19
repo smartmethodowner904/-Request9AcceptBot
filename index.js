@@ -324,6 +324,167 @@ bot.action("joined", async (ctx) => {
   }
 
 });
+/* ================= AUTO DELETE SERVICE MESSAGES ================= */
+
+/* ================= AUTO DELETE SERVICE MESSAGES ================= */
+
+bot.on("message", async (ctx, next) => {
+  const msg = ctx.message;
+
+  const serviceMessage =
+    msg.new_chat_members ||
+    msg.left_chat_member ||
+    msg.group_chat_created ||
+    msg.supergroup_chat_created ||
+    msg.channel_chat_created ||
+    msg.pinned_message ||
+    msg.new_chat_title ||
+    msg.new_chat_photo ||
+    msg.delete_chat_photo ||
+    msg.migrate_to_chat_id ||
+    msg.migrate_from_chat_id ||
+    msg.message_auto_delete_timer_changed ||
+    msg.video_chat_started ||
+    msg.video_chat_ended ||
+    msg.video_chat_participants_invited ||
+    msg.video_chat_scheduled;
+
+  if (serviceMessage) {
+    try {
+      await ctx.deleteMessage();
+    } catch {}
+    return;
+  }
+
+  return next();
+});
+  /* ================= ADMIN COMMANDS BY USERNAME ================= */
+
+async function getTargetUser(ctx) {
+  // 1) Reply করা হলে replied user
+  if (ctx.message.reply_to_message) {
+    return ctx.message.reply_to_message.from;
+  }
+
+  // 2) /ban @username
+  const parts = ctx.message.text.trim().split(/\s+/);
+
+  if (parts.length < 2) return null;
+
+  let username = parts[1]
+    .replace("@", "")
+    .toLowerCase();
+
+  try {
+    const admins = await ctx.getChatAdministrators();
+
+    const member = admins.find(
+      (a) =>
+        a.user.username &&
+        a.user.username.toLowerCase() === username
+    );
+
+    if (member) {
+      return member.user;
+    }
+  } catch {}
+
+  return null;
+}
+
+/* ================= BAN COMMAND ================= */
+
+bot.command("ban", async (ctx) => {
+  const target = await getTargetUser(ctx);
+
+  if (!target) {
+    return ctx.reply(
+      "❌ User not found.\nUse:\n/ban @username\nor reply to a user's message."
+    );
+  }
+
+  try {
+    await ctx.banChatMember(target.id);
+    await ctx.reply(`✅ @${target.username || target.first_name} banned.`);
+  } catch {
+    await ctx.reply("❌ Failed to ban user.");
+  }
+});
+
+/* ================= UNBAN COMMAND ================= */
+
+bot.command("unban", async (ctx) => {
+  const target = await getTargetUser(ctx);
+
+  if (!target) {
+    return ctx.reply(
+      "❌ User not found.\nUse:\n/unban @username\nor reply to a user's message."
+    );
+  }
+
+  try {
+    await ctx.unbanChatMember(target.id);
+    await ctx.reply(`✅ @${target.username || target.first_name} unbanned.`);
+  } catch {
+    await ctx.reply("❌ Failed to unban user.");
+  }
+});
+
+/* ================= MUTE COMMAND ================= */
+
+bot.command("mute", async (ctx) => {
+  const target = await getTargetUser(ctx);
+
+  if (!target) {
+    return ctx.reply(
+      "❌ User not found.\nUse:\n/mute @username\nor reply to a user's message."
+    );
+  }
+
+  try {
+    await ctx.restrictChatMember(target.id, {
+      can_send_messages: false
+    });
+
+    await ctx.reply(`🔇 @${target.username || target.first_name} muted.`);
+  } catch {
+    await ctx.reply("❌ Failed to mute user.");
+  }
+});
+
+/* ================= UNMUTE COMMAND ================= */
+
+bot.command("unmute", async (ctx) => {
+  const target = await getTargetUser(ctx);
+
+  if (!target) {
+    return ctx.reply(
+      "❌ User not found.\nUse:\n/unmute @username\nor reply to a user's message."
+    );
+  }
+
+  try {
+    await ctx.restrictChatMember(target.id, {
+      can_send_messages: true,
+      can_send_audios: true,
+      can_send_documents: true,
+      can_send_photos: true,
+      can_send_videos: true,
+      can_send_video_notes: true,
+      can_send_voice_notes: true,
+      can_send_polls: true,
+      can_send_other_messages: true,
+      can_add_web_page_previews: true,
+      can_change_info: false,
+      can_invite_users: true,
+      can_pin_messages: false
+    });
+
+    await ctx.reply(`🔊 @${target.username || target.first_name} unmuted.`);
+  } catch {
+    await ctx.reply("❌ Failed to unmute user.");
+  }
+});
 
 /* ================= START BOT ================= */
 
